@@ -1,16 +1,11 @@
-import { createServer } from "http";
+import type { Express } from "express";
+import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
-import { insertRoomSchema, drawingCommandSchema, cursorUpdateSchema } from "../shared/schema";
+import { insertRoomSchema, drawingCommandSchema, cursorUpdateSchema, type DrawingCommand } from "@shared/schema";
 import { z } from "zod";
-import type { Express } from "express";
 
-interface ExtendedWebSocket extends WebSocket {
-  userId?: string;
-  roomId?: string;
-}
-
-export async function registerRoutes(app: Express) {
+export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
   // REST API Routes
@@ -67,6 +62,11 @@ export async function registerRoutes(app: Express) {
   // WebSocket Setup
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
 
+  interface ExtendedWebSocket extends WebSocket {
+    userId?: string;
+    roomId?: string;
+  }
+
   wss.on('connection', (ws: ExtendedWebSocket) => {
     console.log('New WebSocket connection');
 
@@ -82,53 +82,55 @@ export async function registerRoutes(app: Express) {
             await storage.addUser({
               id: data.userId,
               roomId: data.roomId,
+              cursorPosition: null,
               lastSeen: Date.now()
             });
 
-            // Broadcast user joined
-            if (ws.roomId) {
-              broadcastToRoom(ws.roomId, {
-                type: 'user-joined',
-                userId: data.userId,
-                userCount: await storage.getUsersCount(data.roomId)
-              }, wss);
-            }
+            // Notify all users in room about new user
+            broadcastToRoom(ws.roomId, {
+              type: 'user-joined',
+              userId: data.userId,
+              userCount: await storage.getUsersCount(data.roomId)
+            }, ws);
+            
             break;
 
-          case 'drawing-command':
-            const drawingCommand = drawingCommandSchema.parse(data);
-            if (ws.roomId) {
-              await storage.addDrawingCommand(ws.roomId, drawingCommand);
+          case 'cursor-move':
+            if (ws.userId && ws.roomId) {
+              const cursorData = cursorUpdateSchema.parse({
+                userId: ws.userId,
+                roomId: ws.roomId,
+                position: data.position
+              });
               
-              // Broadcast to all users in the room except sender
-              broadcastToRoom(ws.roomId, {
-                ...drawingCommand
-              }, wss, ws);
-            }
-            break;
-
-          case 'cursor-update':
-            const cursorUpdate = cursorUpdateSchema.parse(data);
-            if (ws.roomId && cursorUpdate.position) {
-              await storage.updateUserCursor(cursorUpdate.userId, cursorUpdate.position);
+              await storage.updateUserCursor(cursorData.userId, cursorData.position);
               
-              // Broadcast cursor position to other users
               broadcastToRoom(ws.roomId, {
                 type: 'cursor-update',
-                ...cursorUpdate
-              }, wss, ws);
+                userId: cursorData.userId,
+                position: cursorData.position
+              }, ws);
             }
             break;
 
-          case 'clear-canvas':
-            if (ws.roomId) {
-              await storage.clearRoomDrawing(ws.roomId);
+          case 'draw-command':
+            if (ws.userId && ws.roomId) {
+              const command: DrawingCommand = drawingCommandSchema.parse({
+                ...data.command,
+                userId: ws.userId,
+                timestamp: Date.now()
+              });
               
-              // Broadcast clear command to all users in the room
+              if (command.type === 'clear') {
+                await storage.clearRoomDrawing(ws.roomId);
+              } else {
+                await storage.addDrawingCommand(ws.roomId, command);
+              }
+              
               broadcastToRoom(ws.roomId, {
-                type: 'clear-canvas',
-                userId: ws.userId
-              }, wss);
+                type: 'draw-command',
+                command
+              }, ws);
             }
             break;
         }
@@ -139,28 +141,27 @@ export async function registerRoutes(app: Express) {
     });
 
     ws.on('close', async () => {
-      console.log('WebSocket connection closed');
       if (ws.userId && ws.roomId) {
         await storage.removeUser(ws.userId);
         
-        // Broadcast user left
-        const roomId = ws.roomId;
-        broadcastToRoom(roomId, {
+        broadcastToRoom(ws.roomId, {
           type: 'user-left',
           userId: ws.userId,
-          userCount: await storage.getUsersCount(roomId)
-        }, wss);
+          userCount: await storage.getUsersCount(ws.roomId)
+        });
       }
     });
   });
 
-  return httpServer;
-}
+  function broadcastToRoom(roomId: string, message: any, excludeWs?: WebSocket) {
+    wss.clients.forEach((client: ExtendedWebSocket) => {
+      if (client.readyState === WebSocket.OPEN && 
+          client.roomId === roomId && 
+          client !== excludeWs) {
+        client.send(JSON.stringify(message));
+      }
+    });
+  }
 
-function broadcastToRoom(roomId: string, message: any, wss: WebSocketServer, exclude?: ExtendedWebSocket) {
-  wss.clients.forEach((client: ExtendedWebSocket) => {
-    if (client !== exclude && client.roomId === roomId && client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify(message));
-    }
-  });
+  return httpServer;
 }

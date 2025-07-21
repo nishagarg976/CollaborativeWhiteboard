@@ -7,12 +7,42 @@ export const rooms = pgTable("rooms", {
   roomId: text("roomId").notNull().unique(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   lastActivity: timestamp("lastActivity").defaultNow().notNull(),
-  drawingData: jsonb("drawingData").$type<any[]>().default([]).notNull(),
+  drawingData: jsonb("drawingData").$type<DrawingCommand[]>().default([]).notNull(),
 });
 
 export const insertRoomSchema = createInsertSchema(rooms).pick({
   roomId: true,
 });
+
+export type InsertRoom = z.infer<typeof insertRoomSchema>;
+export type Room = typeof rooms.$inferSelect;
+
+// Drawing command types
+export interface DrawingCommand {
+  id: string;
+  type: 'stroke' | 'clear';
+  data: StrokeData | null;
+  timestamp: number;
+  userId: string;
+}
+
+export interface StrokeData {
+  points: Point[];
+  color: string;
+  strokeWidth: number;
+}
+
+export interface Point {
+  x: number;
+  y: number;
+}
+
+export interface User {
+  id: string;
+  roomId: string;
+  cursorPosition: Point | null;
+  lastSeen: number;
+}
 
 export const drawingCommandSchema = z.object({
   id: z.string(),
@@ -37,8 +67,3 @@ export const cursorUpdateSchema = z.object({
     y: z.number()
   }).nullable()
 });
-
-export type Room = typeof rooms.$inferSelect;
-export type InsertRoom = z.infer<typeof insertRoomSchema>;
-export type DrawingCommand = z.infer<typeof drawingCommandSchema>;
-export type CursorUpdate = z.infer<typeof cursorUpdateSchema>;

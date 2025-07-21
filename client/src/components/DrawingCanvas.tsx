@@ -1,10 +1,18 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { DrawingTool, Point, DrawingCommand, StrokeData } from '../types/whiteboard';
 
-export default function DrawingCanvas({ tool, drawingData, onDrawingCommand, onCursorMove }) {
-  const canvasRef = useRef(null);
-  const contextRef = useRef(null);
+interface DrawingCanvasProps {
+  tool: DrawingTool;
+  drawingData: DrawingCommand[];
+  onDrawingCommand: (command: Omit<DrawingCommand, 'userId' | 'timestamp'>) => void;
+  onCursorMove: (position: Point | null) => void;
+}
+
+export default function DrawingCanvas({ tool, drawingData, onDrawingCommand, onCursorMove }: DrawingCanvasProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const contextRef = useRef<CanvasRenderingContext2D | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [currentStroke, setCurrentStroke] = useState([]);
+  const [currentStroke, setCurrentStroke] = useState<Point[]>([]);
 
   // Initialize canvas
   useEffect(() => {
@@ -77,7 +85,7 @@ export default function DrawingCanvas({ tool, drawingData, onDrawingCommand, onC
     });
   };
 
-  const drawStroke = (strokeData) => {
+  const drawStroke = (strokeData: StrokeData) => {
     const context = contextRef.current;
     if (!context || strokeData.points.length < 2) return;
 
@@ -94,7 +102,7 @@ export default function DrawingCanvas({ tool, drawingData, onDrawingCommand, onC
     context.stroke();
   };
 
-  const getCanvasPoint = useCallback((e) => {
+  const getCanvasPoint = useCallback((e: React.MouseEvent | MouseEvent): Point => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
 
@@ -105,7 +113,7 @@ export default function DrawingCanvas({ tool, drawingData, onDrawingCommand, onC
     };
   }, []);
 
-  const startDrawing = useCallback((e) => {
+  const startDrawing = useCallback((e: React.MouseEvent) => {
     const point = getCanvasPoint(e);
     setIsDrawing(true);
     setCurrentStroke([point]);
@@ -119,7 +127,7 @@ export default function DrawingCanvas({ tool, drawingData, onDrawingCommand, onC
     context.moveTo(point.x, point.y);
   }, [tool, getCanvasPoint]);
 
-  const draw = useCallback((e) => {
+  const draw = useCallback((e: React.MouseEvent) => {
     if (!isDrawing) return;
 
     const point = getCanvasPoint(e);
@@ -138,7 +146,7 @@ export default function DrawingCanvas({ tool, drawingData, onDrawingCommand, onC
     setIsDrawing(false);
 
     if (currentStroke.length > 1) {
-      const command = {
+      const command: Omit<DrawingCommand, 'userId' | 'timestamp'> = {
         id: `stroke_${Date.now()}_${Math.random()}`,
         type: 'stroke',
         data: {
@@ -154,7 +162,7 @@ export default function DrawingCanvas({ tool, drawingData, onDrawingCommand, onC
     setCurrentStroke([]);
   }, [isDrawing, currentStroke, tool, onDrawingCommand]);
 
-  const handleMouseMove = useCallback((e) => {
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
     const point = getCanvasPoint(e);
     onCursorMove(point);
 
@@ -171,27 +179,27 @@ export default function DrawingCanvas({ tool, drawingData, onDrawingCommand, onC
   }, [onCursorMove, isDrawing, stopDrawing]);
 
   // Touch events for mobile support
-  const handleTouchStart = (e) => {
+  const handleTouchStart = (e: React.TouchEvent) => {
     e.preventDefault();
     const touch = e.touches[0];
     const mouseEvent = new MouseEvent('mousedown', {
       clientX: touch.clientX,
       clientY: touch.clientY,
     });
-    startDrawing(mouseEvent);
+    startDrawing(mouseEvent as any);
   };
 
-  const handleTouchMove = (e) => {
+  const handleTouchMove = (e: React.TouchEvent) => {
     e.preventDefault();
     const touch = e.touches[0];
     const mouseEvent = new MouseEvent('mousemove', {
       clientX: touch.clientX,
       clientY: touch.clientY,
     });
-    handleMouseMove(mouseEvent);
+    handleMouseMove(mouseEvent as any);
   };
 
-  const handleTouchEnd = (e) => {
+  const handleTouchEnd = (e: React.TouchEvent) => {
     e.preventDefault();
     stopDrawing();
   };

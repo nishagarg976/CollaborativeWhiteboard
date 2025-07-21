@@ -1,7 +1,3 @@
-// Type definitions for the whiteboard application
-// These are comments in JavaScript since we don't have TypeScript types
-
-/*
 export interface Point {
   x: number;
   y: number;
@@ -43,4 +39,3 @@ export interface ConnectionStatus {
   connected: boolean;
   reconnecting: boolean;
 }
-*/

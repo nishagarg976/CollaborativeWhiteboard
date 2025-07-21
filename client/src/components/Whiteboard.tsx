@@ -5,18 +5,25 @@ import DrawingCanvas from './DrawingCanvas';
 import Toolbar from './Toolbar';
 import UserCursors from './UserCursors';
 import { useWebSocket } from '../hooks/useWebSocket';
+import { DrawingTool, DrawingCommand, User, Point } from '../types/whiteboard';
 import { Users, Wifi, WifiOff } from 'lucide-react';
 
-const INITIAL_TOOL = {
+interface WhiteboardProps {
+  roomId: string;
+  initialDrawingData: DrawingCommand[];
+  onLeaveRoom: () => void;
+}
+
+const INITIAL_TOOL: DrawingTool = {
   color: '#000000',
   strokeWidth: 3,
   type: 'pencil'
 };
 
-export default function Whiteboard({ roomId, initialDrawingData, onLeaveRoom }) {
-  const [tool, setTool] = useState(INITIAL_TOOL);
-  const [drawingData, setDrawingData] = useState(initialDrawingData);
-  const [users, setUsers] = useState([]);
+export default function Whiteboard({ roomId, initialDrawingData, onLeaveRoom }: WhiteboardProps) {
+  const [tool, setTool] = useState<DrawingTool>(INITIAL_TOOL);
+  const [drawingData, setDrawingData] = useState<DrawingCommand[]>(initialDrawingData);
+  const [users, setUsers] = useState<User[]>([]);
   const [userCount, setUserCount] = useState(1);
   const { toast } = useToast();
 
@@ -30,7 +37,7 @@ export default function Whiteboard({ roomId, initialDrawingData, onLeaveRoom }) 
   useEffect(() => {
     if (!socket) return;
 
-    const handleMessage = (event) => {
+    const handleMessage = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data);
         
@@ -93,12 +100,12 @@ export default function Whiteboard({ roomId, initialDrawingData, onLeaveRoom }) 
     };
   }, [socket, roomId, toast]);
 
-  const handleToolChange = (changes) => {
+  const handleToolChange = (changes: Partial<DrawingTool>) => {
     setTool(prev => ({ ...prev, ...changes }));
   };
 
-  const handleDrawingCommand = (command) => {
-    const fullCommand = {
+  const handleDrawingCommand = (command: Omit<DrawingCommand, 'userId' | 'timestamp'>) => {
+    const fullCommand: DrawingCommand = {
       ...command,
       userId,
       timestamp: Date.now()
@@ -116,7 +123,7 @@ export default function Whiteboard({ roomId, initialDrawingData, onLeaveRoom }) 
   };
 
   const handleClearCanvas = () => {
-    const clearCommand = {
+    const clearCommand: Omit<DrawingCommand, 'userId' | 'timestamp'> = {
       id: `clear_${Date.now()}`,
       type: 'clear',
       data: null
@@ -125,7 +132,7 @@ export default function Whiteboard({ roomId, initialDrawingData, onLeaveRoom }) 
     handleDrawingCommand(clearCommand);
   };
 
-  const handleCursorMove = (position) => {
+  const handleCursorMove = (position: Point | null) => {
     sendCursorPosition(position);
   };
 

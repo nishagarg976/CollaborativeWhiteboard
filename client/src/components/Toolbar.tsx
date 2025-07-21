@@ -1,6 +1,13 @@
+import { DrawingTool } from '../types/whiteboard';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Edit3, Trash2 } from 'lucide-react';
+
+interface ToolbarProps {
+  tool: DrawingTool;
+  onToolChange: (tool: Partial<DrawingTool>) => void;
+  onClearCanvas: () => void;
+}
 
 const COLORS = [
   { name: 'Black', value: '#000000', class: 'bg-black' },
@@ -9,12 +16,12 @@ const COLORS = [
   { name: 'Green', value: '#10B981', class: 'bg-green-500' },
 ];
 
-export default function Toolbar({ tool, onToolChange, onClearCanvas }) {
-  const handleColorSelect = (color) => {
+export default function Toolbar({ tool, onToolChange, onClearCanvas }: ToolbarProps) {
+  const handleColorSelect = (color: string) => {
     onToolChange({ color });
   };
 
-  const handleStrokeWidthChange = (value) => {
+  const handleStrokeWidthChange = (value: number[]) => {
     onToolChange({ strokeWidth: value[0] });
   };
 

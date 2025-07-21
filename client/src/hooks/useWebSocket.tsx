@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
+import { DrawingCommand, ConnectionStatus } from '../types/whiteboard';
 
-export function useWebSocket(roomId, userId) {
-  const [socket, setSocket] = useState(null);
-  const [connectionStatus, setConnectionStatus] = useState({
+export function useWebSocket(roomId: string | null, userId: string) {
+  const [socket, setSocket] = useState<WebSocket | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
     connected: false,
     reconnecting: false
   });
   
-  const reconnectTimeoutRef = useRef();
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
   const reconnectAttemptsRef = useRef(0);
   const maxReconnectAttempts = 5;
 
@@ -70,20 +71,20 @@ export function useWebSocket(roomId, userId) {
     };
   }, [roomId]);
 
-  const sendMessage = (message) => {
+  const sendMessage = (message: any) => {
     if (socket && socket.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify(message));
     }
   };
 
-  const sendCursorPosition = (position) => {
+  const sendCursorPosition = (position: { x: number; y: number } | null) => {
     sendMessage({
       type: 'cursor-move',
       position
     });
   };
 
-  const sendDrawingCommand = (command) => {
+  const sendDrawingCommand = (command: Omit<DrawingCommand, 'userId' | 'timestamp'>) => {
     sendMessage({
       type: 'draw-command',
       command
