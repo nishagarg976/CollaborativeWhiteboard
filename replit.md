@@ -2,11 +2,19 @@
 
 ## Overview
 
-This is a real-time collaborative whiteboard application built with a modern web stack. The application allows users to join whiteboard rooms using simple room codes and collaborate in real-time with drawing capabilities and live cursor tracking.
+This is a real-time collaborative whiteboard application built with a modern web stack. The application allows users to join whiteboard rooms using simple room codes and collaborate in real-time with drawing capabilities and live cursor tracking. The project follows the MERN-style architecture with React.js components, Node.js/Express backend, and WebSocket support for real-time collaboration.
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+
+## Recent Changes
+
+✓ Restructured frontend to use .js components instead of .tsx files  
+✓ Updated component structure to match requested specification  
+✓ Added comprehensive WebSocket event support (join-room, leave-room, cursor-move, draw-start, draw-move, draw-end, clear-canvas)  
+✓ Fixed backend LSP errors and improved type safety  
+✓ Maintained existing drawing functionality while adapting to new structure
 
 ## System Architecture
 
@@ -36,18 +44,31 @@ Preferred communication style: Simple, everyday language.
 
 ## Key Components
 
-### Frontend Components
-1. **RoomJoin**: Entry point for joining/creating rooms with validation
-2. **Whiteboard**: Main collaborative canvas container
-3. **DrawingCanvas**: HTML5 canvas with drawing logic and event handling
-4. **Toolbar**: Drawing controls (color picker, stroke width, clear button)
-5. **UserCursors**: Real-time cursor position display for other users
+### Frontend Components (React.js)
+1. **App.js**: Main application router and setup
+2. **components/RoomJoin.js**: Room code input and validation
+3. **components/Whiteboard.js**: Main collaborative whiteboard container
+4. **components/DrawingCanvas.js**: HTML5 Canvas drawing logic and event handling
+5. **components/Toolbar.js**: Simple drawing controls (color picker, stroke width, clear button)
+6. **components/UserCursors.js**: Display other users' cursors in real-time
+7. **pages/whiteboard.js**: Main whiteboard page component
+8. **hooks/useWebSocket.js**: WebSocket connection and event management
 
-### Backend Components
-1. **REST API Routes**: Room management endpoints
-2. **WebSocket Server**: Real-time communication for drawing and cursor updates
-3. **Storage Layer**: Abstracted storage interface with memory and database implementations
-4. **Room Management**: Room creation, user tracking, and drawing data persistence
+### Backend Components (Node.js + Express)
+1. **REST API Routes**: 
+   - POST /api/rooms/join (Join/create room)
+   - GET /api/rooms/:roomId (Get room info)
+2. **WebSocket Server**: Real-time communication with comprehensive event support
+3. **Socket Events**: 
+   - 'join-room' (User joins room)
+   - 'leave-room' (User leaves room)  
+   - 'cursor-move' (Cursor position update)
+   - 'draw-start' (Start drawing stroke)
+   - 'draw-move' (Drawing path data)
+   - 'draw-end' (End drawing stroke)
+   - 'clear-canvas' (Clear entire canvas)
+4. **Storage Layer**: In-memory storage with room and user management
+5. **Room Management**: Room creation, user tracking, and drawing data persistence
 
 ### Real-time Features
 - **Live Drawing Sync**: All drawing strokes synchronized instantly across users

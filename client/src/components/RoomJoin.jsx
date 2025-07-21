@@ -6,16 +6,12 @@ import { Label } from '@/components/ui/label';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 
-interface RoomJoinProps {
-  onJoinRoom: (roomId: string, roomData: any) => void;
-}
-
-export default function RoomJoin({ onJoinRoom }: RoomJoinProps) {
+export default function RoomJoin({ onJoinRoom }) {
   const [roomCode, setRoomCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const validateRoomCode = (code: string): boolean => {
+  const validateRoomCode = (code) => {
     return code.length >= 6 && code.length <= 8 && /^[A-Z0-9]+$/.test(code);
   };
 
@@ -66,7 +62,7 @@ export default function RoomJoin({ onJoinRoom }: RoomJoinProps) {
     setRoomCode(result);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
       handleJoinRoom();
     }

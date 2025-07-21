@@ -1,14 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { DrawingCommand, ConnectionStatus } from '../types/whiteboard';
 
-export function useWebSocket(roomId: string | null, userId: string) {
-  const [socket, setSocket] = useState<WebSocket | null>(null);
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
+export function useWebSocket(roomId, userId) {
+  const [socket, setSocket] = useState(null);
+  const [connectionStatus, setConnectionStatus] = useState({
     connected: false,
     reconnecting: false
   });
   
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+  const reconnectTimeoutRef = useRef();
   const reconnectAttemptsRef = useRef(0);
   const maxReconnectAttempts = 5;
 
@@ -71,23 +70,49 @@ export function useWebSocket(roomId: string | null, userId: string) {
     };
   }, [roomId]);
 
-  const sendMessage = (message: any) => {
+  const sendMessage = (message) => {
     if (socket && socket.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify(message));
     }
   };
 
-  const sendCursorPosition = (position: { x: number; y: number } | null) => {
+  const sendCursorPosition = (position) => {
     sendMessage({
       type: 'cursor-move',
       position
     });
   };
 
-  const sendDrawingCommand = (command: Omit<DrawingCommand, 'userId' | 'timestamp'>) => {
+  const sendDrawingCommand = (command) => {
     sendMessage({
       type: 'draw-command',
       command
+    });
+  };
+
+  const sendDrawStart = (point) => {
+    sendMessage({
+      type: 'draw-start',
+      point
+    });
+  };
+
+  const sendDrawMove = (point) => {
+    sendMessage({
+      type: 'draw-move',
+      point
+    });
+  };
+
+  const sendDrawEnd = () => {
+    sendMessage({
+      type: 'draw-end'
+    });
+  };
+
+  const sendClearCanvas = () => {
+    sendMessage({
+      type: 'clear-canvas'
     });
   };
 
@@ -95,6 +120,10 @@ export function useWebSocket(roomId: string | null, userId: string) {
     socket,
     connectionStatus,
     sendCursorPosition,
-    sendDrawingCommand
+    sendDrawingCommand,
+    sendDrawStart,
+    sendDrawMove,
+    sendDrawEnd,
+    sendClearCanvas
   };
 }

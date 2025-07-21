@@ -1,15 +1,11 @@
 import { useState } from 'react';
 import RoomJoin from '../components/RoomJoin';
 import Whiteboard from '../components/Whiteboard';
-import { DrawingCommand } from '../types/whiteboard';
 
 export default function WhiteboardPage() {
-  const [currentRoom, setCurrentRoom] = useState<{
-    roomId: string;
-    drawingData: DrawingCommand[];
-  } | null>(null);
+  const [currentRoom, setCurrentRoom] = useState(null);
 
-  const handleJoinRoom = (roomId: string, roomData: any) => {
+  const handleJoinRoom = (roomId, roomData) => {
     setCurrentRoom({
       roomId,
       drawingData: roomData.room.drawingData || []

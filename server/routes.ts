@@ -87,11 +87,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
 
             // Notify all users in room about new user
-            broadcastToRoom(ws.roomId, {
-              type: 'user-joined',
-              userId: data.userId,
-              userCount: await storage.getUsersCount(data.roomId)
-            }, ws);
+            if (ws.roomId) {
+              broadcastToRoom(ws.roomId, {
+                type: 'user-joined',
+                userId: data.userId,
+                userCount: await storage.getUsersCount(ws.roomId)
+              }, ws);
+            }
             
             break;
 
@@ -115,11 +117,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           case 'draw-command':
             if (ws.userId && ws.roomId) {
-              const command: DrawingCommand = drawingCommandSchema.parse({
-                ...data.command,
+              const command: DrawingCommand = {
+                id: data.command.id,
+                type: data.command.type,
+                data: data.command.data,
                 userId: ws.userId,
                 timestamp: Date.now()
-              });
+              };
               
               if (command.type === 'clear') {
                 await storage.clearRoomDrawing(ws.roomId);
@@ -133,6 +137,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }, ws);
             }
             break;
+
+          case 'draw-start':
+            if (ws.userId && ws.roomId) {
+              broadcastToRoom(ws.roomId, {
+                type: 'draw-start',
+                userId: ws.userId,
+                point: data.point
+              }, ws);
+            }
+            break;
+
+          case 'draw-move':
+            if (ws.userId && ws.roomId) {
+              broadcastToRoom(ws.roomId, {
+                type: 'draw-move',
+                userId: ws.userId,
+                point: data.point
+              }, ws);
+            }
+            break;
+
+          case 'draw-end':
+            if (ws.userId && ws.roomId) {
+              broadcastToRoom(ws.roomId, {
+                type: 'draw-end',
+                userId: ws.userId
+              }, ws);
+            }
+            break;
+
+          case 'clear-canvas':
+            if (ws.userId && ws.roomId) {
+              await storage.clearRoomDrawing(ws.roomId);
+              broadcastToRoom(ws.roomId, {
+                type: 'clear-canvas',
+                userId: ws.userId
+              }, ws);
+            }
+            break;
         }
       } catch (error) {
         console.error('WebSocket message error:', error);
@@ -143,6 +186,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ws.on('close', async () => {
       if (ws.userId && ws.roomId) {
         await storage.removeUser(ws.userId);
+        
+        // Send leave-room event and notify other users
+        broadcastToRoom(ws.roomId, {
+          type: 'leave-room',
+          userId: ws.userId,
+          userCount: await storage.getUsersCount(ws.roomId)
+        });
         
         broadcastToRoom(ws.roomId, {
           type: 'user-left',
