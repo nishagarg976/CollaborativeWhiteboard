@@ -1,10 +1,3 @@
-import { User } from '../types/whiteboard';
-
-interface UserCursorsProps {
-  users: User[];
-  currentUserId: string;
-}
-
 const CURSOR_COLORS = [
   '#3B82F6', // blue
   '#10B981', // green
@@ -16,7 +9,7 @@ const CURSOR_COLORS = [
   '#EC4899', // pink
 ];
 
-export default function UserCursors({ users, currentUserId }: UserCursorsProps) {
+export default function UserCursors({ users, currentUserId }) {
   const otherUsers = users.filter(user => 
     user.id !== currentUserId && 
     user.cursorPosition && 

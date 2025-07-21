@@ -1,11 +1,10 @@
-import type { Express } from "express";
-import { createServer, type Server } from "http";
+import { createServer } from "http";
 import { WebSocketServer, WebSocket } from "ws";
-import { storage } from "./storage";
-import { insertRoomSchema, drawingCommandSchema, cursorUpdateSchema, type DrawingCommand } from "@shared/schema";
+import { storage } from "./storage.js";
+import { insertRoomSchema, drawingCommandSchema, cursorUpdateSchema } from "../shared/schema.js";
 import { z } from "zod";
 
-export async function registerRoutes(app: Express): Promise<Server> {
+export async function registerRoutes(app) {
   const httpServer = createServer(app);
 
   // REST API Routes
@@ -62,12 +61,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // WebSocket Setup
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
 
-  interface ExtendedWebSocket extends WebSocket {
-    userId?: string;
-    roomId?: string;
-  }
-
-  wss.on('connection', (ws: ExtendedWebSocket) => {
+  wss.on('connection', (ws) => {
     console.log('New WebSocket connection');
 
     ws.on('message', async (message) => {
@@ -115,7 +109,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           case 'draw-command':
             if (ws.userId && ws.roomId) {
-              const command: DrawingCommand = drawingCommandSchema.parse({
+              const command = drawingCommandSchema.parse({
                 ...data.command,
                 userId: ws.userId,
                 timestamp: Date.now()
@@ -153,8 +147,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  function broadcastToRoom(roomId: string, message: any, excludeWs?: WebSocket) {
-    wss.clients.forEach((client: ExtendedWebSocket) => {
+  function broadcastToRoom(roomId, message, excludeWs) {
+    wss.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN && 
           client.roomId === roomId && 
           client !== excludeWs) {

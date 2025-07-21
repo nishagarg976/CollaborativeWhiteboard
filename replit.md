@@ -7,6 +7,7 @@ This is a real-time collaborative whiteboard application built with a modern web
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Preferred file format: JavaScript (.js/.jsx) instead of TypeScript (.ts/.tsx)
 
 ## System Architecture
 
@@ -21,7 +22,7 @@ Preferred communication style: Simple, everyday language.
 - **Build Tool**: Vite with React plugin
 
 ### Backend Architecture
-- **Runtime**: Node.js with Express.js
+- **Runtime**: Node.js with Express.js (JavaScript)
 - **WebSocket Server**: Built-in WebSocket (ws) library
 - **Database ORM**: Drizzle ORM
 - **Database**: PostgreSQL (configured for Neon serverless)
